@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Box, Button, Card, Container, TextField, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Card,
+  Container,
+  TextField,
+  Typography
+} from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -15,6 +22,7 @@ export default function Home() {
     date: ""
   });
   const [storedUrls, setStoredUrls] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     handleGetStoredUrls();
@@ -34,25 +42,25 @@ export default function Home() {
   };
 
   const handleSubmitVideo = async () => {
-    await axios.post("http://wezume.in:8081/api/urls", {
-      channelName: formData.channelName,  
-      url: formData.url,
-      date: formData.date 
-    })
-      .then((res) => {
-        console.log("Video submitted successfully:", res.data); 
+    await axios
+      .post("http://wezume.in:8081/api/urls", {
+        channelName: formData.channelName,
+        url: formData.url,
+        date: formData.date
+      })
+      .then(() => {
         setFormData({ channelName: "", url: "", date: "" });
         setSelectedDate(null);
-        handleGetStoredUrls(); 
+        handleGetStoredUrls();
       })
       .catch((err) => {
         console.error("Error submitting video:", err);
       });
-    setFormData({ channelName: "", url: "", date: "" });
   };
 
   const handleGetStoredUrls = async () => {
-    await axios.get("http://wezume.in:8081/api/urls")
+    await axios
+      .get("http://wezume.in:8081/api/urls")
       .then((res) => {
         setStoredUrls(res.data);
       })
@@ -60,6 +68,20 @@ export default function Home() {
         console.error(err);
       });
   };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+  };
+
+  const filteredUrls = storedUrls.filter((item) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      (item.channelName &&
+        item.channelName.toLowerCase().includes(query)) ||
+      (item.url && item.url.toLowerCase().includes(query)) ||
+      (item.date && item.date.toLowerCase().includes(query))
+    );
+  });
 
   return (
     <>
@@ -71,7 +93,7 @@ export default function Home() {
           p: 2,
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
+          alignItems: "center"
         }}
       >
         <Box
@@ -106,36 +128,101 @@ export default function Home() {
               value={selectedDate}
               onChange={handleDateChange}
               sx={{ width: { sm: "100%", lg: "25%" } }}
-              slotProps={{ textField: { variant: "outlined", size: "small" } }}
+              slotProps={{
+                textField: { variant: "outlined", size: "small" }
+              }}
             />
           </LocalizationProvider>
           <Button
             variant="contained"
-            disabled={!formData.channelName || !formData.url || !formData.date}
+            disabled={
+              !formData.channelName || !formData.url || !formData.date
+            }
             onClick={handleSubmitVideo}
             sx={{ width: { sm: "100%", lg: "20%" } }}
           >
             Submit
           </Button>
         </Box>
-        <Typography variant="h5" fontWeight={600} textAlign="left" sx={{ width: "98%", mt: 2 }}>Search Stored URLs</Typography>
-        <Box sx={{ width: "98%", display: "flex", my: 2, gap: 2, justifyContent: "center" }}>
+
+        <Typography
+          variant="h5"
+          fontWeight={600}
+          textAlign="left"
+          sx={{ width: "98%", mt: 2 }}
+        >
+          Search Stored URLs
+        </Typography>
+
+        <Box
+          sx={{
+            width: "98%",
+            display: "flex",
+            my: 2,
+            gap: 2,
+            justifyContent: "center"
+          }}
+        >
           <TextField
             size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by Channel, URL, or Date"
-            sx={{ width: { sm: "65%", lg: "85%" }, mt: 2 }} 
+            sx={{ width: { sm: "95%", lg: "95%" }, mt: 2 }}
           />
-          <Button variant="contained" sx={{ height: 40, mt: 2 }}>Search</Button>
-          <Button variant="contained" sx={{ height: 40, mt: 2 }}>Clear</Button>
+          <Button
+            variant="contained"
+            sx={{ height: 40, mt: 2 }}
+            onClick={handleClearSearch}
+          >
+            Clear
+          </Button>
         </Box>
-        <Box sx={{ width: "98%", display: "flex", flexDirection: "column", my: 2, gap: 2, justifyContent: "center" }}>
-          <Typography variant="h6" fontWeight={600} sx={{ textAlign: "left" }}>Stored URLs</Typography>
-          <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "center" }}>
-            {storedUrls?.map((item, index) => ( 
-              <Card key={index} variant="outlined" sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1, width: { sm: "100%", lg: "46%" } }}>
-                <Typography variant="body1" fontWeight={500}>{item?.channelName}</Typography>
+
+        <Box
+          sx={{
+            width: "98%",
+            display: "flex",
+            flexDirection: "column",
+            my: 2,
+            gap: 2,
+            justifyContent: "center"
+          }}
+        >
+          <Typography
+            variant="h6"
+            fontWeight={600}
+            sx={{ textAlign: "left" }}
+          >
+            Stored URLs
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 3,
+              flexWrap: "wrap",
+              justifyContent: "center"
+            }}
+          >
+            {filteredUrls.map((item, index) => (
+              <Card
+                key={index}
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1,
+                  width: { xs: "100%", sm: "100%", lg: "46%" }
+                }}
+              >
+                <Typography variant="body1" fontWeight={500}>
+                  {item?.channelName}
+                </Typography>
                 <Typography variant="body2">{item?.url}</Typography>
-                <Typography variant="caption" color="textSecondary">{item?.date}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {item?.date}
+                </Typography>
               </Card>
             ))}
           </Box>
