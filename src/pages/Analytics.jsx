@@ -67,7 +67,7 @@ export default function Analytics() {
 
 
   const fetchAllData = async () => {
-    await axios.get("http://wezume.in:8081/api/youtube/all")
+    await axios.get("https://meinigar.online/api/youtube/all")
       .then((res) => setTableData(res.data))
       .catch((e) => {
         console.error("Error fetching data");
@@ -76,7 +76,7 @@ export default function Analytics() {
   };
 
   const fetchSearchData = async () => {
-    await axios.get("http://wezume.in:8081/api/youtube/analytics/search", { params: formData })
+    await axios.get("https://meinigar.online/api/youtube/analytics/search", { params: formData })
       .then((res) => setTableData(res.data))
       .catch((e) => {
         console.error("Error fetching search data");
@@ -173,9 +173,10 @@ export default function Analytics() {
           sx={{
             width: "98%",
             display: "flex",
-            gap: 3,
+            flexDirection: { xs: "column", md: "row" },
+            gap: 2,
             my: 2,
-            flexWrap: { sm: "wrap", lg: "nowrap" },
+            alignItems: "center",
             justifyContent: "center"
           }}
         >
