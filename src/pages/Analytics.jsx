@@ -155,9 +155,11 @@ export default function Analytics() {
     setSortDirection(isAsc ? "desc" : "asc");
 
     const sorted = [...tableData].sort((a, b) => {
-      const valA = Number(a[column]);
-      const valB = Number(b[column]);
-      return isAsc ? valB - valA : valA - valB;
+      const valA = typeof a[column] === "string" ? a[column].toLowerCase() : Number(a[column]);
+      const valB = typeof b[column] === "string" ? b[column].toLowerCase() : Number(b[column]);
+      if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+      if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+      return 0;
     });
 
     setTableData(sorted);
@@ -238,7 +240,15 @@ export default function Analytics() {
               <TableHead>
                 <TableRow>
                   <TableCell>Title</TableCell>
-                  <TableCell>Channel</TableCell>
+                  <TableCell
+                    onClick={() => handleSort("channelTitle")}
+                    sx={{ cursor: "pointer", fontWeight: "bold" }}
+                    align="center"
+                  >
+                    <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
+                      Channel <span>{renderSortArrow("channelTitle")}</span>
+                    </Box>
+                  </TableCell>
                   <TableCell>Published</TableCell>
                   <TableCell>Created</TableCell>
                   <TableCell
@@ -290,4 +300,4 @@ export default function Analytics() {
       </Container>
     </>
   );
-};
+}
