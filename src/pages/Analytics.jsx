@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   Container,
-  Tab,
   Table,
   TableBody,
   TableCell,
@@ -18,10 +17,9 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format } from "date-fns";
-import ExcelJS from 'exceljs';
+import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import Navbar from "../components/Navbar";
-
 
 export default function Analytics() {
   const [selectedFromDate, setSelectedFromDate] = useState(null);
@@ -32,6 +30,8 @@ export default function Analytics() {
     createdAtTo: ""
   });
   const [tableData, setTableData] = useState([]);
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortDirection, setSortDirection] = useState("asc");
 
   useEffect(() => {
     fetchAllData();
@@ -65,95 +65,110 @@ export default function Analytics() {
     fetchAllData();
   };
 
-
   const fetchAllData = async () => {
-    await axios.get("https://meinigar.online/api/youtube/all")
+    await axios
+      .get("https://meinigar.online/api/youtube/all")
       .then((res) => setTableData(res.data))
-      .catch((e) => {
-        console.error("Error fetching data");
+      .catch(() => {
         setTableData([]);
       });
   };
 
   const fetchSearchData = async () => {
-    await axios.get("https://meinigar.online/api/youtube/analytics/search", { params: formData })
+    await axios
+      .get("https://meinigar.online/api/youtube/analytics/search", { params: formData })
       .then((res) => setTableData(res.data))
-      .catch((e) => {
-        console.error("Error fetching search data");
+      .catch(() => {
         setTableData([]);
       });
   };
 
- const exportToExcel = async () => {
-  if (tableData.length === 0) {
-    alert("No data to export.");
-    return;
-  }
+  const exportToExcel = async () => {
+    if (tableData.length === 0) {
+      alert("No data to export.");
+      return;
+    }
 
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('YouTube Analytics');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("YouTube Analytics");
 
-  // Define columns with headers only (no width yet)
-  const columns = [
-    { header: 'Title', key: 'title' },
-    { header: 'Channel', key: 'channelTitle' },
-    { header: 'Published Date', key: 'publishedAt' },
-    { header: 'Created Date', key: 'createdAt' },
-    { header: 'Views', key: 'viewCount' },
-    { header: 'Likes', key: 'likeCount' },
-    { header: 'Comments', key: 'commentCount' }
-  ];
+    const columns = [
+      { header: "Title", key: "title" },
+      { header: "Channel", key: "channelTitle" },
+      { header: "Published Date", key: "publishedAt" },
+      { header: "Created Date", key: "createdAt" },
+      { header: "Views", key: "viewCount" },
+      { header: "Likes", key: "likeCount" },
+      { header: "Comments", key: "commentCount" }
+    ];
 
-  worksheet.columns = columns;
+    worksheet.columns = columns;
 
-  // Add rows
-  tableData.forEach((row) => {
-    worksheet.addRow(row);
-  });
-
-  // Auto-fit column widths by calculating max length in each column
-  worksheet.columns.forEach((column) => {
-    let maxLength = column.header.length;
-    column.eachCell?.((cell) => {
-      const cellValue = cell.value ? cell.value.toString() : '';
-      maxLength = Math.max(maxLength, cellValue.length);
+    tableData.forEach((row) => {
+      worksheet.addRow(row);
     });
-    column.width = maxLength + 2; // Add some padding
-  });
 
-  // Style header row
-  const headerRow = worksheet.getRow(1);
-  headerRow.eachCell((cell) => {
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF1E88E5' }
-    };
-    cell.alignment = { horizontal: 'center' };
-  });
+    worksheet.columns.forEach((column) => {
+      let maxLength = column.header.length;
+      column.eachCell?.((cell) => {
+        const cellValue = cell.value ? cell.value.toString() : "";
+        maxLength = Math.max(maxLength, cellValue.length);
+      });
+      column.width = maxLength + 2;
+    });
 
-  // Center-align and border all cells
-  worksheet.eachRow((row, rowNumber) => {
-    row.eachCell((cell) => {
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' }
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF1E88E5" }
       };
+      cell.alignment = { horizontal: "center" };
     });
-  });
 
-  // Download file
-  const buffer = await workbook.xlsx.writeBuffer();
-  const date = new Date().toISOString().split("T")[0];
-  const fileName = `YouTube_Analytics_${date}.xlsx`;
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  saveAs(blob, fileName);
-};
+    worksheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" }
+        };
+      });
+    });
 
+    const buffer = await workbook.xlsx.writeBuffer();
+    const date = new Date().toISOString().split("T")[0];
+    const fileName = `YouTube_Analytics_${date}.xlsx`;
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+    saveAs(blob, fileName);
+  };
+
+  const handleSort = (column) => {
+    const isAsc = sortColumn === column && sortDirection === "asc";
+    setSortColumn(column);
+    setSortDirection(isAsc ? "desc" : "asc");
+
+    const sorted = [...tableData].sort((a, b) => {
+      const valA = Number(a[column]);
+      const valB = Number(b[column]);
+      return isAsc ? valB - valA : valA - valB;
+    });
+
+    setTableData(sorted);
+  };
+
+  const renderSortArrow = (column) => {
+    if (sortColumn === column) {
+      return sortDirection === "asc" ? "▲" : "▼";
+    }
+    return "▲";
+  };
 
   return (
     <>
@@ -168,7 +183,9 @@ export default function Analytics() {
           alignItems: "center"
         }}
       >
-        <Typography variant="h5" fontWeight={600} textAlign="left" sx={{ mb: 2, width: "98%" }}>Search YouTube Analytics</Typography>
+        <Typography variant="h5" fontWeight={600} textAlign="left" sx={{ mb: 2, width: "98%" }}>
+          Search YouTube Analytics
+        </Typography>
         <Box
           sx={{
             width: "98%",
@@ -208,8 +225,12 @@ export default function Analytics() {
               }}
             />
           </LocalizationProvider>
-          <Button variant="contained" onClick={fetchSearchData}>Search</Button>
-          <Button variant="contained" sx={{ bgcolor: "gray" }} onClick={clearSearch}>Clear</Button>
+          <Button variant="contained" onClick={fetchSearchData}>
+            Search
+          </Button>
+          <Button variant="contained" sx={{ bgcolor: "gray" }} onClick={clearSearch}>
+            Clear
+          </Button>
         </Box>
         <Box sx={{ width: "98%", my: 2 }}>
           <TableContainer>
@@ -220,9 +241,31 @@ export default function Analytics() {
                   <TableCell>Channel</TableCell>
                   <TableCell>Published</TableCell>
                   <TableCell>Created</TableCell>
-                  <TableCell>Views</TableCell>
-                  <TableCell>Likes</TableCell>
-                  <TableCell>Comments</TableCell>
+                  <TableCell
+                    onClick={() => handleSort("viewCount")}
+                    sx={{ cursor: "pointer", fontWeight: "bold" }}
+                  >
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      Views <span>{renderSortArrow("viewCount")}</span>
+                    </Box>
+                  </TableCell>
+                  <TableCell
+                    onClick={() => handleSort("likeCount")}
+                    sx={{ cursor: "pointer", fontWeight: "bold" }}
+                  >
+                    <Box display="flex" alignItems="center" gap={0.5}>
+                      Likes <span>{renderSortArrow("likeCount")}</span>
+                    </Box>
+                  </TableCell>
+                  <TableCell
+                    onClick={() => handleSort("commentCount")}
+                    sx={{ cursor: "pointer", fontWeight: "bold" }}
+                    align="center"
+                  >
+                    <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
+                      Comments <span>{renderSortArrow("commentCount")}</span>
+                    </Box>
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -241,14 +284,10 @@ export default function Analytics() {
             </Table>
           </TableContainer>
         </Box>
-        <Button
-          variant="contained"
-          color="success"
-          onClick={exportToExcel}
-        >
+        <Button variant="contained" color="success" onClick={exportToExcel}>
           Export to Excel
         </Button>
       </Container>
     </>
-  )
-}
+  );
+};
