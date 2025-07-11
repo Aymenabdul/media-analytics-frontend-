@@ -12,7 +12,12 @@ import {
   TableRow,
   TextField,
   Paper,
-  Typography
+  Typography,
+  TablePagination,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -27,12 +32,18 @@ export default function Analytics() {
   const [selectedToDate, setSelectedToDate] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
+    channelTitle: "",
     createdAtFrom: "",
     createdAtTo: ""
   });
   const [tableData, setTableData] = useState([]);
+  const [originalData, setOriginalData] = useState([]);
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
+  
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     fetchAllData();
@@ -60,27 +71,39 @@ export default function Analytics() {
   };
 
   const clearSearch = () => {
-    setFormData({ title: "", createdAtFrom: "", createdAtTo: "" });
+    setFormData({ title: "", channelTitle: "", createdAtFrom: "", createdAtTo: "" });
     setSelectedFromDate(null);
     setSelectedToDate(null);
+    setPage(0);
+    setSortColumn(null);
+    setSortDirection("asc");
     fetchAllData();
   };
 
   const fetchAllData = async () => {
     await axios
       .get("https://meinigar.online/api/youtube/all")
-      .then((res) => setTableData(res.data))
+      .then((res) => {
+        setTableData(res.data);
+        setOriginalData(res.data);
+      })
       .catch(() => {
         setTableData([]);
+        setOriginalData([]);
       });
   };
 
   const fetchSearchData = async () => {
     await axios
       .get("https://meinigar.online/api/youtube/analytics/search", { params: formData })
-      .then((res) => setTableData(res.data))
+      .then((res) => {
+        setTableData(res.data);
+        setOriginalData(res.data);
+        setPage(0);
+      })
       .catch(() => {
         setTableData([]);
+        setOriginalData([]);
       });
   };
 
@@ -152,14 +175,28 @@ export default function Analytics() {
 
   const handleSort = (column) => {
     const isAsc = sortColumn === column && sortDirection === "asc";
+    const newDirection = isAsc ? "desc" : "asc";
     setSortColumn(column);
-    setSortDirection(isAsc ? "desc" : "asc");
+    setSortDirection(newDirection);
 
     const sorted = [...tableData].sort((a, b) => {
-      const valA = typeof a[column] === "string" ? a[column].toLowerCase() : Number(a[column]);
-      const valB = typeof b[column] === "string" ? b[column].toLowerCase() : Number(b[column]);
-      if (valA < valB) return sortDirection === "asc" ? -1 : 1;
-      if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+      let valA = a[column];
+      let valB = b[column];
+
+      // Handle different data types
+      if (column === "viewCount" || column === "likeCount" || column === "commentCount") {
+        valA = Number(valA) || 0;
+        valB = Number(valB) || 0;
+      } else if (column === "publishedAt" || column === "createdAt") {
+        valA = new Date(valA).getTime();
+        valB = new Date(valB).getTime();
+      } else {
+        valA = typeof valA === "string" ? valA.toLowerCase() : String(valA).toLowerCase();
+        valB = typeof valB === "string" ? valB.toLowerCase() : String(valB).toLowerCase();
+      }
+
+      if (valA < valB) return newDirection === "asc" ? -1 : 1;
+      if (valA > valB) return newDirection === "asc" ? 1 : -1;
       return 0;
     });
 
@@ -172,6 +209,19 @@ export default function Analytics() {
     }
     return "▲";
   };
+
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Get current page data
+  const paginatedData = tableData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
     <>
@@ -189,23 +239,37 @@ export default function Analytics() {
         <Typography variant="h5" fontWeight={600} textAlign="left" sx={{ mb: 2, width: "98%" }}>
           Search YouTube Analytics
         </Typography>
+        
+        {/* Search Bar Container with New Background Color */}
         <Box
           sx={{
-            width: "98%",
+            width: "96%",
             display: "flex",
             flexDirection: { xs: "column", md: "row" },
             gap: 2,
             my: 2,
+            p: 3,
             alignItems: "center",
-            justifyContent: "center"
+            justifyContent: "center",
+            backgroundColor: "#a6dff1",
+            borderRadius: 2,
+            boxShadow: 2
           }}
         >
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <TextField
+              name="title"
+              size="small"
+              placeholder="Search by Title"
+              sx={{ width: { sm: "100%", lg: "20%" } }}
+              value={formData.title}
+              onChange={handleChange}
+            />
+            <TextField
               name="channelTitle"
               size="small"
               placeholder="Search by Channel Name"
-              sx={{ width: { sm: "100%", lg: "25%" } }}
+              sx={{ width: { sm: "100%", lg: "20%" } }}
               value={formData.channelTitle}
               onChange={handleChange}
             />
@@ -213,7 +277,7 @@ export default function Analytics() {
               label="Select From Date"
               value={selectedFromDate}
               onChange={handleFromDateChange}
-              sx={{ width: { sm: "100%", lg: "25%" } }}
+              sx={{ width: { sm: "100%", lg: "20%" } }}
               slotProps={{
                 textField: { variant: "outlined", size: "small" }
               }}
@@ -222,7 +286,7 @@ export default function Analytics() {
               label="Select To Date"
               value={selectedToDate}
               onChange={handleToDateChange}
-              sx={{ width: { sm: "100%", lg: "25%" } }}
+              sx={{ width: { sm: "100%", lg: "20%" } }}
               slotProps={{
                 textField: { variant: "outlined", size: "small" }
               }}
@@ -235,6 +299,8 @@ export default function Analytics() {
             Clear
           </Button>
         </Box>
+
+        {/* Table Container */}
         <Box sx={{ width: "100%", my: 2 }}>
           <TableContainer
             component={Paper}
@@ -250,29 +316,32 @@ export default function Analytics() {
               <TableHead>
                 <TableRow>
                   {[
-                    { label: "Title", width: "20%" },
-                    { label: "Channel", sortable: "channelTitle", align: "center" },
-                    { label: "Published" },
-                    { label: "Created", width: "10%" },
-                    { label: "Views", sortable: "viewCount" },
-                    { label: "Likes", sortable: "likeCount" },
-                    { label: "Comments", sortable: "commentCount", align: "center" }
+                    { label: "Title", sortable: "title", width: "25%" },
+                    { label: "Channel", sortable: "channelTitle", align: "center", width: "15%" },
+                    { label: "Published", sortable: "publishedAt", width: "12%" },
+                    { label: "Created", sortable: "createdAt", width: "12%" },
+                    { label: "Views", sortable: "viewCount", width: "12%" },
+                    { label: "Likes", sortable: "likeCount", width: "12%" },
+                    { label: "Comments", sortable: "commentCount", align: "center", width: "12%" }
                   ].map((cell, idx) => (
                     <TableCell
                       key={idx}
-                      onClick={cell.sortable ? () => handleSort(cell.sortable) : undefined}
+                      onClick={() => handleSort(cell.sortable)}
                       align={cell.align || "left"}
                       sx={{
                         fontWeight: "600",
-                        fontSize: "18px",
+                        fontSize: "16px",
                         color: "#fff",
                         whiteSpace: "nowrap",
-                        cursor: cell.sortable ? "pointer" : "default",
+                        cursor: "pointer",
                         backgroundColor: "rgba(106, 201, 232, 0.6)",
                         backdropFilter: "blur(8px)",
                         WebkitBackdropFilter: "blur(8px)",
                         borderBottom: "1px solid rgba(255, 255, 255, 0.3)",
-                        width: cell.width || "auto", // Custom width
+                        width: cell.width || "auto",
+                        "&:hover": {
+                          backgroundColor: "rgba(106, 201, 232, 0.8)",
+                        }
                       }}
                     >
                       <Box
@@ -281,7 +350,7 @@ export default function Analytics() {
                         justifyContent={cell.align === "center" ? "center" : "flex-start"}
                         gap={0.5}
                       >
-                        {cell.label} {cell.sortable && renderSortArrow(cell.sortable)}
+                        {cell.label} {renderSortArrow(cell.sortable)}
                       </Box>
                     </TableCell>
                   ))}
@@ -289,7 +358,7 @@ export default function Analytics() {
               </TableHead>
 
               <TableBody>
-                {tableData?.map((row, index) => (
+                {paginatedData?.map((row, index) => (
                   <TableRow
                     key={index}
                     sx={{
@@ -298,26 +367,87 @@ export default function Analytics() {
                       transition: "background-color 0.3s",
                     }}
                   >
-                    <TableCell sx={{ width: "10%" }}>{row?.title}</TableCell>
+                    <TableCell sx={{ 
+                      maxWidth: "200px", 
+                      overflow: "hidden", 
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    }}>
+                      {row?.title}
+                    </TableCell>
                     <TableCell align="center">{row?.channelTitle}</TableCell>
-                    <TableCell>{row?.publishedAt}</TableCell>
-                    <TableCell sx={{ width: "18%" }}>{row?.createdAt}</TableCell>
-                    <TableCell>{row?.viewCount}</TableCell>
-                    <TableCell>{row?.likeCount}</TableCell>
-                    <TableCell align="center">{row?.commentCount}</TableCell>
+                    <TableCell align="center">
+                      {row?.publishedAt ? new Date(row.publishedAt).toLocaleDateString() : "N/A"}
+                    </TableCell>
+                    <TableCell align="center">
+                      {row?.createdAt ? new Date(row.createdAt).toLocaleDateString() : "N/A"}
+                    </TableCell>
+                    <TableCell align="center">{row?.viewCount?.toLocaleString() || 0}</TableCell>
+                    <TableCell align="center">{row?.likeCount?.toLocaleString() || 0}</TableCell>
+                    <TableCell align="center">{row?.commentCount?.toLocaleString() || 0}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
 
-
-
+          {/* Pagination */}
+          <TablePagination
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            component="div"
+            count={tableData.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            sx={{
+              backgroundColor: "#f5f5f5",
+              borderRadius: "0 0 8px 8px",
+              "& .MuiTablePagination-toolbar": {
+                padding: "12px 16px",
+              },
+              "& .MuiTablePagination-selectLabel": {
+                fontWeight: 500,
+              },
+              "& .MuiTablePagination-displayedRows": {
+                fontWeight: 500,
+              }
+            }}
+          />
         </Box>
-        <Button variant="contained" color="success" onClick={exportToExcel}>
-          Export to Excel
-        </Button>
+
+        {/* Export Button */}
+        <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+          <Button variant="contained" color="success" onClick={exportToExcel}>
+            Export to Excel
+          </Button>
+          <Typography variant="body2" color="text.secondary" sx={{ alignSelf: "center" }}>
+            Total Records: {tableData.length}
+          </Typography>
+        </Box>
       </Container>
+
+      {/* Footer */}
+      <Box
+        sx={{
+          width: "100%",
+          textAlign: "center",
+          py: 2,
+          backgroundColor: "yellow",
+          color: "black",
+          fontSize: "0.875rem"
+        }}
+      >
+        Powered by{" "}
+        <a
+          href="http://dataemperor.in/"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "black", textDecoration: "underline" }}
+        >
+          DataEmperor
+        </a>
+      </Box>
     </>
   );
 }
