@@ -6,7 +6,14 @@ import {
   Card,
   Container,
   TextField,
-  Typography
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -28,12 +35,12 @@ export default function Home() {
     handleGetStoredUrls();
   }, []);
 
- const isValidUrl = (url) => {
-  return (
-    url.startsWith("https://www.youtube.com") ||
-    url.startsWith("https://youtu.be/")
-  );
-};
+  const isValidUrl = (url) => {
+    return (
+      url.startsWith("https://www.youtube.com") ||
+      url.startsWith("https://youtu.be/")
+    );
+  };
 
 
 
@@ -59,7 +66,7 @@ export default function Home() {
 
     try {
       // ✅ Check if the URL already exists
-      const checkRes = await axios.get("http://172.20.10.2:8080/api/urls/check", {
+      const checkRes = await axios.get("https://meinigar.online/api/urls/check", {
         params: { url: formData.url },
       });
 
@@ -69,7 +76,7 @@ export default function Home() {
       }
 
       // ✅ Submit the URL
-      await axios.post("http://172.20.10.2:8080/api/urls", {
+      await axios.post("https://meinigar.online/api/urls", {
         channelName: formData.channelName,
         url: formData.url,
         date: formData.date,
@@ -142,6 +149,13 @@ export default function Home() {
           sx={{
             width: "98%",
             display: "flex",
+            backgroundColor: "#014F66",
+            padding: 2,
+            borderRadius: 2,
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            mb: 2,
             flexDirection: { xs: "column", md: "row" },
             gap: 2,
             my: 2,
@@ -150,30 +164,68 @@ export default function Home() {
           }}
         >
           <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <TextField
+            {/* <TextField
               name="channelName"
               size="small"
               placeholder="Channel Name"
               sx={{ width: { sm: "100%", lg: "25%" } }}
               value={formData.channelName}
               onChange={handleChange}
-            />
+            /> */}
             <TextField
               name="url"
               size="small"
               placeholder="Video URL"
-              sx={{ width: { sm: "100%", lg: "30%" } }}
               value={formData.url}
               onChange={handleChange}
               error={formData.url !== "" && !isValidUrl(formData.url)}
               helperText={
                 formData.url !== "" && !isValidUrl(formData.url)
-                  ? "Enter a valid URL. "
+                  ? "Enter a valid URL."
                   : ""
               }
+              sx={{
+                width: { sm: "100%", lg: "30%" },
+                backgroundColor: "#015a75", // Slightly lighter than #014F66 for input contrast
+                borderRadius: 2,
+                input: {
+                  color: "#ffffff",
+                  padding: "10px",
+                },
+                "& .MuiOutlinedInput-root": {
+                  "& fieldset": {
+                    borderColor: "rgba(255, 255, 255, 0.25)",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#ffffff",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#ffffff",
+                    borderWidth: "1.5px",
+                  },
+                },
+                "& .MuiInputBase-input::placeholder": {
+                  color: "#cce7f0", // Soft placeholder contrast
+                  opacity: 1,
+                },
+                "& .MuiFormHelperText-root": {
+                  color: "#ffb3b3", // Error color
+                },
+                "& .MuiInputLabel-root": {
+                  color: "#cce7f0",
+                },
+                boxShadow: "inset 0 0 6px rgba(255, 255, 255, 0.05)",
+              }}
+              InputProps={{
+                style: {
+                  color: "#fff",
+                },
+              }}
             />
 
-            <DatePicker
+
+
+            {/* <DatePicker
               label="Select Date"
               value={selectedDate}
               onChange={handleDateChange}
@@ -181,14 +233,14 @@ export default function Home() {
               slotProps={{
                 textField: { variant: "outlined", size: "small" }
               }}
-            />
+            /> */}
           </LocalizationProvider>
           <Button
             variant="contained"
             disabled={
-              !formData.channelName ||
+              // !formData.channelName ||
               !formData.url ||
-              !formData.date ||
+              // !formData.date ||
               !isValidUrl(formData.url)
             }
             onClick={handleSubmitVideo}
@@ -249,44 +301,53 @@ export default function Home() {
           >
             Stored URLs
           </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              gap: 3,
-              flexWrap: "wrap",
-              justifyContent: "center"
-            }}
-          >
-            {filteredUrls.map((item, index) => (
-              <Card
-                key={index}
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 1,
-                  width: { xs: "100%", sm: "100%", lg: "46%" }
-                }}
-              >
-                <Typography variant="body1" fontWeight={500}>
-                  {item?.channelName}
-                </Typography>
-                <Typography variant="body2">{item?.url}</Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {item?.date}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={() => handleDeleteUrl(item.id)}
-                  sx={{ alignSelf: "flex-start", mt: 1 }}
-                >
-                  Delete
-                </Button>
-              </Card>
-            ))}
-          </Box>
+          <TableContainer component={Paper} elevation={3} sx={{ borderRadius: 2, mt: 3 }}>
+            <Table>
+              <TableHead sx={{ backgroundColor: "#014F66" }}>
+                <TableRow>
+                  <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>Channel Name</TableCell>
+                  <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>URL</TableCell>
+                  <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>Date</TableCell>
+                  <TableCell sx={{ color: "#fff", fontWeight: "bold" }}>Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredUrls.map((item, index) => (
+                  <TableRow
+                    key={index}
+                    sx={{
+                      backgroundColor: "rgba(1, 96, 127, 0.6)",
+                      color: "#fff",
+                      "&:hover": {
+                        backgroundColor: "rgba(1, 96, 127, 0.8)",
+                      },
+                    }}
+                  >
+                    <TableCell sx={{ color: "#fff" }}>{item?.channelName}</TableCell>
+                    <TableCell sx={{ color: "#fff" }}>{item?.url}</TableCell>
+                    <TableCell sx={{ color: "#fff" }}>{item?.date}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleDeleteUrl(item.id)}
+                        sx={{
+                          borderColor: "#fff",
+                          color: "#fff",
+                          "&:hover": {
+                            backgroundColor: "rgba(255, 255, 255, 0.15)",
+                            borderColor: "#fff",
+                          },
+                        }}
+                      >
+                        Stop Tracking
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
       </Container>
     </>

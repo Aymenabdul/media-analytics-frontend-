@@ -11,6 +11,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Paper,
   Typography
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -234,57 +235,73 @@ export default function Analytics() {
             Clear
           </Button>
         </Box>
-        <Box sx={{ width: "98%", my: 2 }}>
-          <TableContainer>
-            <Table>
+        <Box sx={{ width: "100%", my: 2 }}>
+          <TableContainer
+            component={Paper}
+            elevation={3}
+            sx={{
+              borderRadius: 2,
+              width: "100%",
+              overflowX: "auto",
+              maxHeight: 600,
+            }}
+          >
+            <Table stickyHeader sx={{ minWidth: 800, width: "100%" }}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Title</TableCell>
-                  <TableCell
-                    onClick={() => handleSort("channelTitle")}
-                    sx={{ cursor: "pointer", fontWeight: "bold" }}
-                    align="center"
-                  >
-                    <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
-                      Channel <span>{renderSortArrow("channelTitle")}</span>
-                    </Box>
-                  </TableCell>
-                  <TableCell>Published</TableCell>
-                  <TableCell>Created</TableCell>
-                  <TableCell
-                    onClick={() => handleSort("viewCount")}
-                    sx={{ cursor: "pointer", fontWeight: "bold" }}
-                  >
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      Views <span>{renderSortArrow("viewCount")}</span>
-                    </Box>
-                  </TableCell>
-                  <TableCell
-                    onClick={() => handleSort("likeCount")}
-                    sx={{ cursor: "pointer", fontWeight: "bold" }}
-                  >
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      Likes <span>{renderSortArrow("likeCount")}</span>
-                    </Box>
-                  </TableCell>
-                  <TableCell
-                    onClick={() => handleSort("commentCount")}
-                    sx={{ cursor: "pointer", fontWeight: "bold" }}
-                    align="center"
-                  >
-                    <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
-                      Comments <span>{renderSortArrow("commentCount")}</span>
-                    </Box>
-                  </TableCell>
+                  {[
+                    { label: "Title", width: "20%" },
+                    { label: "Channel", sortable: "channelTitle", align: "center" },
+                    { label: "Published" },
+                    { label: "Created", width: "10%" },
+                    { label: "Views", sortable: "viewCount" },
+                    { label: "Likes", sortable: "likeCount" },
+                    { label: "Comments", sortable: "commentCount", align: "center" }
+                  ].map((cell, idx) => (
+                    <TableCell
+                      key={idx}
+                      onClick={cell.sortable ? () => handleSort(cell.sortable) : undefined}
+                      align={cell.align || "left"}
+                      sx={{
+                        fontWeight: "600",
+                        fontSize: "18px",
+                        color: "#fff",
+                        whiteSpace: "nowrap",
+                        cursor: cell.sortable ? "pointer" : "default",
+                        backgroundColor: "rgba(106, 201, 232, 0.6)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
+                        borderBottom: "1px solid rgba(255, 255, 255, 0.3)",
+                        width: cell.width || "auto", // Custom width
+                      }}
+                    >
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent={cell.align === "center" ? "center" : "flex-start"}
+                        gap={0.5}
+                      >
+                        {cell.label} {cell.sortable && renderSortArrow(cell.sortable)}
+                      </Box>
+                    </TableCell>
+                  ))}
                 </TableRow>
               </TableHead>
+
               <TableBody>
                 {tableData?.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{row?.title}</TableCell>
-                    <TableCell>{row?.channelTitle}</TableCell>
+                  <TableRow
+                    key={index}
+                    sx={{
+                      "&:nth-of-type(odd)": { backgroundColor: "#fafafa" },
+                      "&:hover": { backgroundColor: "#e3f2fd" },
+                      transition: "background-color 0.3s",
+                    }}
+                  >
+                    <TableCell sx={{ width: "10%" }}>{row?.title}</TableCell>
+                    <TableCell align="center">{row?.channelTitle}</TableCell>
                     <TableCell>{row?.publishedAt}</TableCell>
-                    <TableCell>{row?.createdAt}</TableCell>
+                    <TableCell sx={{ width: "18%" }}>{row?.createdAt}</TableCell>
                     <TableCell>{row?.viewCount}</TableCell>
                     <TableCell>{row?.likeCount}</TableCell>
                     <TableCell align="center">{row?.commentCount}</TableCell>
@@ -293,6 +310,9 @@ export default function Analytics() {
               </TableBody>
             </Table>
           </TableContainer>
+
+
+
         </Box>
         <Button variant="contained" color="success" onClick={exportToExcel}>
           Export to Excel
